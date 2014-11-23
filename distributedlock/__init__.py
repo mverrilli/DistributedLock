@@ -57,6 +57,8 @@ class distributedlock(object):
         else:
             raise LockNotAcquiredError()
             
+        return self.lock
+            
     def __exit__(self, type, value, traceback):
         _debug("releasing lock %s" % self.key)
         self.lock.release()
