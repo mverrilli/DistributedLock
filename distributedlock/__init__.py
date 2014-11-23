@@ -6,7 +6,7 @@ DEBUG = True
 DEFAULT_TIMEOUT=60
 DEFAULT_BLOCKING=True
 DEFAULT_MEMCACHED_CLIENT=None
-DEFAULT_LOCK_FACTORY=lambda key: MemcachedLock(key, DEFAULT_MEMCACHED_CLIENT, DEFAULT_TIMEOUT)
+DEFAULT_LOCK_FACTORY=lambda key, timeout: MemcachedLock(key, DEFAULT_MEMCACHED_CLIENT, timeout)
 
 __all__ = [ 'LockNotAcquiredError', 'distributedlock' ]
 
@@ -21,16 +21,21 @@ class LockNotAcquiredError(Exception):
 
 class distributedlock(object):
     
-    def __init__(self, key=None, lock=None, blocking=None):
+    def __init__(self, key=None, lock=None, blocking=None, timeout=None):
         self.key = key
         self.lock = lock
         if blocking == None:
             self.blocking = DEFAULT_BLOCKING
         else:
             self.blocking = blocking
-        
+
+        if timeout == None:
+            self.timeout = DEFAULT_TIMEOUT
+        else:
+            self.timeout = timeout
+            
         if not self.lock:
-            self.lock = DEFAULT_LOCK_FACTORY(self.key)
+            self.lock = DEFAULT_LOCK_FACTORY(self.key, self.timeout)
         
     # for use with decorator
     def __call__(self, f):
