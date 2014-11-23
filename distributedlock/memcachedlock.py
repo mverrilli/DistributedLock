@@ -16,6 +16,7 @@ class MemcachedLock(object):
         self.key = "lock:%s" % key
         self.client = client
         self.timeout = timeout
+        self.next_expiration = None
 
         # When you use threading.Lock object, instance references acts as ID of the object. In memcached
         # we have a key to identify lock, but to identify which machine/instance/thread has lock is necessary
@@ -24,7 +25,9 @@ class MemcachedLock(object):
         self.instance_id = uuid.uuid1().hex
 
     def acquire(self, blocking=True):
+        
         while True:
+            next_exp = time.time() + self.timeout
             added = self.client.add(self.key, self.instance_id, self.timeout)
             log.warn("Added=%s" % repr(added))
             if added:
@@ -38,6 +41,8 @@ class MemcachedLock(object):
 
             log.warn('Waiting locking for "%s"', self.key)
             time.sleep(1)
+            
+        self.next_expiration = next_exp
         return True
 
     def release(self):
@@ -49,5 +54,22 @@ class MemcachedLock(object):
         else:
             log.warn("I've no lock to release. Increase TIMEOUT of lock operations")
 
+    def refresh(self, blocking=True, timeout=None, threshold=15):
+        if self.next_expiration - time.time() <= threshold: 
+        
+            if timeout == None: 
+                timeout = self.timeout
+                
+            value = self.client.get(self.key)
+            if value == self.instance_id:
+                # set will reset the expiration timeout
+                next_exp = time.time() + self.timeout
+                self.client.set(self.key, self.instance_id, timeout)
+                self.next_expiration = next_exp
+            else:
+                log.warn("I've no lock to refresh. Attempting to reaquire lock")
+                return self.acquire(blocking)
+                
+        return True    
 
 
