@@ -60,14 +60,15 @@ Arguments
 ------------------------
 
 ```python
-def distributedlock(key, lock=None, blocking=None)
+def distributedlock(key, lock=None, blocking=None, timeout=None)
 ```
 
   * key: name of key in memcached. Avoid long names, because memcached supports only 255 characters in key. Using decorator
   key name will be class name + method name if not specified.
   * lock: If you desire use another lock strategy, like `threading.Lock()` or `threading.RLock()`. defaults to `distributedlock.memcachedlock.MemcachedLock`
   * blocking: If another process has lock, wait until have a lock or abort immediately, raising `LockNotAcquiredError`. Defaults to `distributedlock.DEFAULT_BLOCKING`
-
+  * timeout: Override the default lock timeout in seconds.
+  
 Tips
 ------------------------
 
